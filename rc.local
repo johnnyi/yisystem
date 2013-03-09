@@ -1,0 +1,74 @@
+#!/bin/bash
+#Author : Yi Xiaohui
+#MSN    : yxh_benet@hotmail.com
+#QQ     : 398774310
+#
+# 这个文件用于启动系统中安装的业务应用；
+# 初始化系统时被写入/etc/rc.local，被/etc/rc.local调用。
+# 放在这个文件中的语句会被每一个系统启动时调用，所以请
+# 注意语句的通用性
+#
+
+################
+# Start MySQL  #
+################
+
+if [ -d /usr/local/bbcserver/mysql/bin ] ; then
+	export PATH=$PATH:/usr/local/bbcserver/mysql/bin
+        if [ -f /etc/my.multi.cnf ] ; then
+                /usr/local/bbcserver/mysql/bin/mysqld_multi --config-file=/etc/my.multi.cnf start
+        fi
+fi
+
+
+################
+# Start Apache #
+################
+
+[ -d /usr/local/bbcserver/httpd/bin ] && /usr/local/bbcserver/httpd/bin/apachectl start
+
+################
+# Start Monit  #
+################
+
+[ -f /usr/local/bbcserver/monit/etc/monitrc ] && /usr/local/bbcserver/monit/bin/monit -c /usr/local/bbcserver/monit/etc/monitrc
+
+###################
+# Start Memcached #
+###################
+
+[ -f /usr/local/bbcserver/memcached/etc/memcachedctl ] && . /usr/local/bbcserver/memcached/etc/memcachedctl
+
+
+###################
+# Start Nginx     #
+###################
+
+
+if [ -x /usr/local/bbcserver/nginx/sbin/nginx ] ; then
+    if [ -x /usr/local/bbcserver/php-fcgi/sbin/php-fpm ] ; then
+            /usr/local/bbcserver/php-fcgi/sbin/php-fpm start
+            /usr/local/bbcserver/nginx/sbin/nginx
+	else
+            if [ -x /usr/local/bbcserver/php/sbin/php-fpm ] ; then
+                /usr/local/bbcserver/php/sbin/php-fpm start
+                /usr/local/bbcserver/nginx/sbin/nginx
+            fi
+    fi
+fi
+
+
+
+####################
+# Start lighttpd   #
+####################
+
+if [ -x /usr/local/bbcserver/lighttpd/bin/rc.lighttpd.redhat ] ; then
+    for i in /usr/local/bbcserver/lighttpd/bin/spawn-php*sh ; do
+        if [ -x $i ] ; then
+            $i
+        fi
+    done
+    /usr/local/bbcserver/lighttpd/bin/rc.lighttpd.redhat start
+fi
+
